@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="To-do app" />
+    <title>Tasks</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css"
+    />
+    <style>
+      ul {
+        padding: 0;
+      }
+
+      input {
+        min-width: 0;
+      }
+
+      button {
+        padding: 0.5rem;
+      }
+
+      .task {
+        display: flex;
+      }
+
+      .task.done [name="task"] {
+        text-decoration: line-through;
+        opacity: 0.5;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tasks</h1>
+    <form autocomplete="off">
+      <input name="task" type="text" placeholder="New task..." />
+    </form>
+    <section>
+      <ul id="tasks" />
+    </section>
+
+    <script type="text/javascript">
+      const form = document.querySelector("form");
+      const taskField = form.querySelector('[name="task"]');
+      const tasksContainer = document.getElementById("tasks");
+
+      function init() {
+        getTasksFromLocalStorage().forEach((task) => {
+          const taskElement = createTaskElement(task);
+
+          tasksContainer.appendChild(taskElement);
+        });
+      }
+
+      function getTasksFromLocalStorage() {
+        return JSON.parse(window.localStorage.getItem("tasks")) ?? [];
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const taskValue = taskField.value;
+
+        if (!taskValue) {
+          return;
+        }
+
+        const task = createTaskElement({ title: taskValue });
+
+        tasksContainer.appendChild(task);
+
+        form.reset();
+      });
+
+      function createTaskElement({ title, done = false }) {
+        const task = document.createElement("task-element");
+
+        task.setAttribute("title", title);
+        task.setAttribute("done", done);
+
+        return task;
+      }
+
+      class Task extends HTMLElement {
+        connectedCallback() {
+          const title = this.getAttribute("title");
+          const className = { true: "done" }[this.getAttribute("done")] ?? "";
+
+          function done(event) {
+            const taskElement = event.target.parentNode;
+
+            taskElement.classList.toggle("done");
+
+            updateLocalStorage();
+          }
+
+          function remove(event) {
+            const rootElement = event.target.parentNode.parentNode;
+
+            rootElement.remove();
+
+            updateLocalStorage();
+          }
+
+          function updateLocalStorage() {
+            const tasks = querySelectorAllTask();
+
+            window.localStorage.setItem("tasks", JSON.stringify(tasks));
+          }
+
+          function querySelectorAllTask() {
+            return [...document.querySelectorAll("task-element")].map(
+              (taskElement) => ({
+                title: taskElement.querySelector("[name=task]")?.value,
+                done: taskElement
+                  .querySelector(".task")
+                  .classList.contains("done"),
+              })
+            );
+          }
+
+          this.innerHTML = `
+            <li class="task ${className}">
+              <input name="task" value="${title}" />
+              <button title="done">👌️</button>
+              <button title="remove">🗑️</button>
+            </li>
+          `;
+
+          const taskInput = this.querySelector("[name=task]");
+          const doneButton = this.querySelector("[title=done]");
+          const removeButton = this.querySelector("[title=remove]");
+
+          taskInput.addEventListener("change", updateLocalStorage);
+          doneButton.addEventListener("click", done);
+          removeButton.addEventListener("click", remove);
+
+          updateLocalStorage();
+        }
+      }
+
+      window.customElements.define("task-element", Task);
+
+      init();
+    </script>
+  </body>
+</html>
