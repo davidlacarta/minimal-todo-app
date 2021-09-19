@@ -20,7 +20,22 @@
       }
 
       button {
-        padding: 0.5rem;
+        padding: 0 0.5rem 0 0.5rem;
+        min-width: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .visually-hidden {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
       }
 
       .task {
@@ -75,7 +90,7 @@
       });
 
       function createTaskElement({ title, done = false }) {
-        const task = document.createElement("task-element");
+        const task = document.createElement("li", { is: "task-element" });
 
         task.setAttribute("title", title);
         task.setAttribute("done", done);
@@ -83,10 +98,17 @@
         return task;
       }
 
-      class Task extends HTMLElement {
+      class Task extends HTMLLIElement {
+        constructor() {
+          super();
+          this.classList.add('task')
+        }
+
         connectedCallback() {
           const title = this.getAttribute("title");
-          const className = { true: "done" }[this.getAttribute("done")] ?? "";
+          if (this.getAttribute("done") == "true") {
+            this.classList.add('done')
+          }
 
           function done(event) {
             const taskElement = event.target.parentNode;
@@ -97,7 +119,7 @@
           }
 
           function remove(event) {
-            const rootElement = event.target.parentNode.parentNode;
+            const rootElement = event.target.parentNode;
 
             rootElement.remove();
 
@@ -111,22 +133,19 @@
           }
 
           function querySelectorAllTask() {
-            return [...document.querySelectorAll("task-element")].map(
+            return [...document.querySelectorAll(".task")].map(
               (taskElement) => ({
                 title: taskElement.querySelector("[name=task]")?.value,
-                done: taskElement
-                  .querySelector(".task")
-                  .classList.contains("done"),
+                done: taskElement.classList.contains("done"),
               })
             );
           }
 
           this.innerHTML = `
-            <li class="task ${className}">
-              <input name="task" value="${title}" />
-              <button title="done">👌️</button>
-              <button title="remove">🗑️</button>
-            </li>
+            <label class="visually-hidden" for="${title}">task</label>
+            <input id="${title}" name="task" value="${title}" />
+            <button title="done">👌️</button>
+            <button title="remove">🗑️</button>
           `;
 
           const taskInput = this.querySelector("[name=task]");
@@ -141,7 +160,7 @@
         }
       }
 
-      window.customElements.define("task-element", Task);
+      window.customElements.define("task-element", Task, { extends: "li"});
 
       init();
     </script>
